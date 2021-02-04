@@ -1,10 +1,10 @@
-var cluster = require( "cluster" )
-var os = require( "os" );
-var express = require( "express" );
-var http = require( "http" );
-var sockets = require( "socket.io" );
-var redis = require( "redis" );
-var sessions = require( "cookie-sessions" );
+var cluster = require("cluster")
+var os = require("os");
+var express = require("express");
+var http = require("http");
+var sockets = require("socket.io");
+var redis = require("redis");
+var sessions = require("cookie-sessions");
 
 var participationModule = require('./lib/participation')
 
@@ -21,7 +21,7 @@ if (cluster.isMaster) {
   for (var i = 0; i < numCPUs; i++)
     cluster.fork();
 
-  cluster.on('exit', function(worker, code, signal) {
+  cluster.on('exit', function (worker, code, signal) {
     console.log('worker ' + worker.process.pid + ' died');
     cluster.fork();
   });
@@ -35,27 +35,27 @@ if (cluster.isMaster) {
   var app = express();
 
   // Create participation object to track room capacity. 
-  var participation = participationModule.Participation( MAXIMUM_ROOM_SIZE, redis.createClient() );
+  var participation = participationModule.Participation(MAXIMUM_ROOM_SIZE, redis.createClient());
 
   //************ MIDDLEWARE **************
 
-  app.configure(function() {
-    app.set( 'views', __dirname + '/views/' );
-    app.set( 'view engine', 'jade' );
+  app.configure(function () {
+    app.set('views', __dirname + '/views/');
+    app.set('view engine', 'jade');
 
-    app.use( express.static(__dirname + '/public') );
-    app.use( sessions( { secret: process.env.NODE_SESSION_SECRET || "careful, this isn't really secret", session_key: '_redis-waiting-list' } ) );
+    app.use(express.static(__dirname + '/public'));
+    app.use(sessions({ secret: process.env.NODE_SESSION_SECRET || "careful, this isn't really secret", session_key: '_redis-waiting-list' }));
   });
 
   /* Make sure the user has an id */
-  function checkId( request, response, next ) {
-    if ( ! request.session )
+  function checkId(request, response, next) {
+    if (!request.session)
       request.session = {}
 
-    if ( ! request.session.id ) {
+    if (!request.session.id) {
       // generate random string
-      for (var i=0,sessionId='',r; r=parseInt(Math.random()*36), i<5; i++)
-        sessionId += r < 10 ? r : String.fromCharCode(87+r);
+      for (var i = 0, sessionId = '', r; r = parseInt(Math.random() * 36), i < 5; i++)
+        sessionId += r < 10 ? r : String.fromCharCode(87 + r);
 
       request.session.id = sessionId;
     }
@@ -65,36 +65,43 @@ if (cluster.isMaster) {
 
   /* Check participation to see if the room is full.
      If it is, direct user to the 'waiting_room' page instead. */
-  function checkCapacity( request, response, next ) {
-    return participation.check( request.params.room, request.session.id, withStatus );
+  function checkCapacity(request, response, next) {
+    return participation.check(request.params.room, request.session.id, withStatus);
 
-    function withStatus( err, status ) {
-      if (err) 
+    function withStatus(err, status) {
+      if (err)
         return next(err);
 
-      if (status && status.status === 'ready') 
+      if (request.params.room == 'time' && status && status.status === 'ready')
+        return response.redirect(302, "https://www.cognitoforms.com/FranciscoEdilton/TimeForm");
+
+      if (status && status.status === 'ready')
         return next();
-      
-      return response.render('waiting_room', {id:request.params.room, status:status} )
+
+
+      if (status && status.status === 'ready')
+        return next();
+
+      return response.render('waiting_room', { id: request.params.room, status: status })
     }
   }
 
   //************* ROUTES ********************
 
   // Handle default route
-  app.get("/", function( request, response ) {
-    return response.render( 'index' );
+  app.get("/", function (request, response) {
+    return response.render('index');
   });
 
   // Handle status request
 
   // Handle room
-  app.get("/:room", checkId, checkCapacity, function( request, response) {
-    return response.render( 'room', {id:request.params.room, userId:request.session.id} );
+  app.get("/:room", checkId, checkCapacity, function (request, response) {
+    return response.render('room', { id: request.params.room, userId: request.session.id });
   });
 
   // Handle status checks
-  app.get( "/:room/waiting-list", checkId, function(request, response, next) {
+  app.get("/:room/waiting-list", checkId, function (request, response, next) {
     return participation.check(request.params.room, request.session.id, respondWithStatus);
 
     function respondWithStatus(err, status) {
@@ -104,11 +111,11 @@ if (cluster.isMaster) {
   });
 
   //********** START SERVER *****************
-  
+
   var applicationServer = http.createServer(app);
   var port = parseInt(process.env.NODE_PORT) || 8234;
-  applicationServer.listen( port );
-  console.log( "Listening on port " + port );
+  applicationServer.listen(port);
+  console.log("Listening on port " + port);
 
 
   /*************************
@@ -116,30 +123,30 @@ if (cluster.isMaster) {
    *************************/
 
   // Initialize socket.io using redis store
-  var io = sockets.listen( applicationServer );
-  io.set( 'log level', 2 );
+  var io = sockets.listen(applicationServer);
+  io.set('log level', 2);
 
   // Use redis store to support multi-process/server communication
   var RedisStore = require('socket.io/lib/stores/redis');
   io.set('store', new RedisStore({
-    redisPub : redis.createClient(),
-    redisSub : redis.createClient(),
-    redisClient : redis.createClient()
+    redisPub: redis.createClient(),
+    redisSub: redis.createClient(),
+    redisClient: redis.createClient()
   }));
 
-  function updateRoomCount( roomId ) {
+  function updateRoomCount(roomId) {
     return participation.count(roomId, withCount);
 
-    function withCount( err, count ) {
-      if ( err )
+    function withCount(err, count) {
+      if (err)
         return console.log(err);
 
-      io.sockets.in(roomId).json.emit('message', {count:count})
+      io.sockets.in(roomId).json.emit('message', { count: count })
     }
   }
 
   // Use join message to register as a participant
-  function join( socket, message ) {
+  function join(socket, message) {
     socket.join(message.roomId);
     participation.connect(message.roomId, message.userId, null);
 
@@ -147,27 +154,27 @@ if (cluster.isMaster) {
     socket.roomId = message.roomId;
     socket.userId = message.userId;
 
-    updateRoomCount( message.roomId );
+    updateRoomCount(message.roomId);
   }
 
-  io.sockets.on( 'connection', function( socket ) {
-    socket.on( 'message', function( body ) {
-      for ( var type in body ) {
+  io.sockets.on('connection', function (socket) {
+    socket.on('message', function (body) {
+      for (var type in body) {
         var message = body[type];
-        if ( type === 'join' )
-          join( socket, message );
+        if (type === 'join')
+          join(socket, message);
         else if (message.room)
-          io.sockets.in(message.room).json.emit('message',body);
+          io.sockets.in(message.room).json.emit('message', body);
       }
-    } );
+    });
 
-    socket.on( 'disconnect', function() {
+    socket.on('disconnect', function () {
       // disconnect from room
       if (socket.roomId)
-         participation.disconnect(socket.roomId, socket.userId, null);
+        participation.disconnect(socket.roomId, socket.userId, null);
 
-      updateRoomCount( socket.roomId );
-    } );
-  } );
+      updateRoomCount(socket.roomId);
+    });
+  });
 
 }

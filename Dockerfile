@@ -5,7 +5,7 @@ FROM alpine
 RUN apk update && \
     apk add git gcc g++ npm redis make && \
     git clone https://github.com/franciscoed/redis-waiting-list-demo.git && \
-    cd redis-waiting-list-demo \
+    cd redis-waiting-list-demo && \
     npm install
 
 
