@@ -72,9 +72,6 @@ if (cluster.isMaster) {
       if (err)
         return next(err);
 
-      if (request.params.room == 'time' && status && status.status === 'ready')
-        return response.redirect(302, "https://www.cognitoforms.com/FranciscoEdilton/TimeForm");
-
       if (status && status.status === 'ready')
         return next();
 
@@ -94,6 +91,16 @@ if (cluster.isMaster) {
   });
 
   // Handle status request
+
+  // Handle Embed form
+  app.get("/embed/:room", checkId, checkCapacity, function (request, response) {
+    return response.render('embed', { id: request.params.room, userId: request.session.id });
+  });
+
+  // Handle time form
+  app.get("/time/:room", checkId, checkCapacity, function (request, response) {
+    return response.render('time', { id: request.params.room, userId: request.session.id });
+  });
 
   // Handle room
   app.get("/:room", checkId, checkCapacity, function (request, response) {
