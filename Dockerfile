@@ -1,6 +1,6 @@
 FROM alpine
 
-
+COPY init.sh /init.sh
 
 RUN apk update && \
     apk add git gcc g++ npm redis make && \
@@ -13,5 +13,5 @@ WORKDIR /redis-waiting-list-demo/
 
 EXPOSE 8234
 
-
-CMD ["npm", "start"]
+# Shame on me for running 2 process on a container
+CMD ["sh", "/init.sh"]

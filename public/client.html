@@ -2,22 +2,23 @@
 
 <head>
     <meta name="viewport" content="width=1200">
-    <link rel="stylesheet" href="http://localhost:8234/main.css">
+    <link rel="stylesheet" href="/main.css">
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script>
         function blablabla() {
-            $.get('http://localhost:8234/demo/waiting-list', function (response) {
+            $.get('/demo/waiting-list', function (response) {
                 var status = response.status;
                 console.log(response)
                 document.getElementById("myText").innerHTML = status;
             });
         }
     </script>
-    <script type="text/javascript" src="http://localhost:8234/socket.io/socket.io.js"></script>
-    <script type="text/javascript" src="http://localhost:8234/room.js"></script>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript" src="/room.js"></script>
 </head>
 
 <body id="demo" onload="blablabla()">
+    <h1>Demo room:</h1>
     <h1>Status is: <span id="myText"></span></h1>
 </body>
 
