@@ -1,0 +1,11 @@
+extends layout
+
+prepend head
+  script(type='text/javascript', src='/socket.io/socket.io.js')
+  script(type='text/javascript', src='/room.js')
+
+append content
+  h1 room #{locals.id}
+  #connected 0 connected
+  iframe(src="#{locals.room}", width='100%', height='166', frameborder='no')
+

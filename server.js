@@ -102,6 +102,12 @@ if (cluster.isMaster) {
     return response.render('time', { id: request.params.room, userId: request.session.id });
   });
 
+  // Handle time form
+  app.get("/profile/form/:room", checkId, checkCapacity, function (request, response) {
+    return response.render('embed2', { id: request.params.room, userId: request.session.id });
+  });
+
+
   // Handle room
   app.get("/:room", checkId, checkCapacity, function (request, response) {
     return response.render('room', { id: request.params.room, userId: request.session.id });
